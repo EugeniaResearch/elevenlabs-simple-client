@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ElevenLabs API</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>ElevenLabs Text-to-Speech</h1>
+    <form id="tts-form">
+      <label for="api-key">API Key:</label>
+      <input type="text" id="api-key" placeholder="Enter your ElevenLabs API key" required>
+
+      <label for="voice">Voice Name:</label>
+      <input type="text" id="voice" placeholder="e.g., 'Bella', 'Josh', etc." required>
+
+      <label for="text">Text to Convert:</label>
+      <textarea id="text" placeholder="Enter the text you want to convert to speech" rows="5" required></textarea>
+
+      <button type="submit">Generate Audio</button>
+    </form>
+
+    <div id="output-section" class="hidden">
+      <p id="status-message"></p>
+      <div class="download-links">
+        <a id="download-mp3" class="download-link" download="output.mp3">
+          <i class="fas fa-download"></i> Download MP3
+        </a>
+        <a id="download-wav" class="download-link" download="output.wav">
+          <i class="fas fa-download"></i> Download WAV
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Font Awesome for download icons (optional) -->
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+  <script>
+    document.getElementById('tts-form').addEventListener('submit', async function(event) {
+      event.preventDefault();
+      
+      const apiKey = document.getElementById('api-key').value;
+      const voice = document.getElementById('voice').value;
+      const text = document.getElementById('text').value;
+      const statusMessage = document.getElementById('status-message');
+      const outputSection = document.getElementById('output-section');
+
+      // Show loading state
+      statusMessage.textContent = "Generating audio...";
+      outputSection.classList.remove('hidden');
+      document.querySelector('button[type="submit"]').disabled = true;
+
+      try {
+        const response = await fetch('/generate-audio', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            apiKey: apiKey, 
+            voice: voice, 
+            text: text 
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          statusMessage.textContent = "Audio generated successfully!";
+          statusMessage.style.color = "green";
+          
+          // Set download links
+          document.getElementById('download-mp3').href = data.mp3_url;
+          document.getElementById('download-wav').href = data.wav_url;
+          
+          // Add timestamp to prevent caching
+          const timestamp = new Date().getTime();
+          document.getElementById('download-mp3').href += `?t=${timestamp}`;
+          document.getElementById('download-wav').href += `?t=${timestamp}`;
+        } else {
+          statusMessage.textContent = "Error: " + data.message;
+          statusMessage.style.color = "red";
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        statusMessage.textContent = "Network error occurred. Please try again.";
+        statusMessage.style.color = "red";
+      } finally {
+        document.querySelector('button[type="submit"]').disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
